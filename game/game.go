@@ -25,6 +25,7 @@ func New() *Game {
 	PRAGMA journal_mode=WAL;
 	PRAGMA busy_timeout=3000;
 	PRAGMA synchronous=NORMAL;
+	PRAGMA foreign_keys=ON;
 	`
 	if _, err := db.Exec(setupSQL); err != nil {
 		log.Fatalf("Failed to set pragmas: %v", err)
@@ -40,8 +41,17 @@ func (g *Game) InitTables() {
 	tables := []string {
 		//Player Table
 		`CREATE TABLE IF NOT EXISTS players (
-			id BIGINT PRIMARY KEY NOT NULL UNIQUE,
-			lvl INTEGER DEFAULT 1
+			id TEXT PRIMARY KEY NOT NULL UNIQUE,
+			lvl INTEGER DEFAULT 1,
+			inv_size INTEGER DEFAULT 50
+		);`,
+		//Inventory Table
+		`CREATE TABLE IF NOT EXISTS inventory (
+			column INTEGER PRIMARY KEY AUTOINCREMENT,
+			item_id INTEGER,
+			user_id TEXT,
+			quantity INTEGER,
+			durability INTEGER
 		);`,
 	}
 

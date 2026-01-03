@@ -10,40 +10,48 @@ import (
 type Player struct {
 	ID string
 	Lvl int
+	InvSize int
+
+	Inv Inventory
 }
 
-//Game Logic for Players
-func (g *Game) LevelUpPlayer(ID string) error {
-	p, err := g.GetPlayer(ID)
-	if err != nil { return err }
-	p.Lvl += 1
-	return nil
-}
-
-//Database Logic for Players
+//Game Logic
 func (g *Game) GetPlayer(ID string) (*Player, error) {
 	p, ok := g.ActivePlayers[ID]
-	if ok { return p, nil }
+	if !ok {
+		return g.loadPlayer(ID)
+	}
+	return p, nil
+}
 
-	p = &Player {}
-	query := `SELECT id, lvl FROM players WHERE id = ?`
+//Database Logic
+func (g *Game) loadPlayer(ID string) (*Player, error) {
+	//Load Player Data
+	p := &Player {}
+	query := `SELECT id, lvl, inv_size FROM players WHERE id = ?`
 	err := g.DB.QueryRow(query, ID).Scan(
 		&p.ID,
 		&p.Lvl,
+		&p.InvSize,
 	)
 	if err != nil { 
 		if err == sql.ErrNoRows {
-			err = g.AddPlayer(ID)
+			err = g.addPlayer(ID)
 			if err != nil { return nil, err }
-			return g.GetPlayer(ID)
+			return g.loadPlayer(ID)
 		}
 		return nil, err 
+	}
+	//Load Player Inventory
+	err = g.loadInventory(p)
+	if err != nil {
+		return nil, err
 	}
 	g.ActivePlayers[ID] = p
 	return p, nil
 }
 
-func (g *Game) AddPlayer(ID string) error {
+func (g *Game) addPlayer(ID string) error {
 	query := `INSERT INTO players (id) VALUES (?)`
 	_, err := g.DB.Exec(query, ID)
 	if err != nil {
@@ -62,5 +70,8 @@ func (g *Game) SavePlayer(ID string) error {
 	WHERE id = ?`
 
 	_, err := g.DB.Exec(query, p.Lvl, ID)
+	if err != nil { return err }
+
+	err = g.saveInventory(p)
 	return err
 }

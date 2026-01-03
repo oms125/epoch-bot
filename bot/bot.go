@@ -8,6 +8,11 @@ import (
 	"github.com/oms125/epoch-bot/game"
 )
 
+const (
+	PERM_ALL int64 = discordgo.PermissionUseApplicationCommands
+	PERM_ADMIN int64 = discordgo.PermissionAdministrator
+)
+
 type Bot struct {
 	Session *discordgo.Session
 	Game *game.Game
