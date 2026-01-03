@@ -5,18 +5,24 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/oms125/epoch-bot/bot"
-	"github.com/oms125/epoch-bot/commands"
+	"github.com/oms125/epoch-bot/internal/bot"
+	"github.com/oms125/epoch-bot/internal/database"
+)
+
+var (
+	Bot *bot.Bot
 )
 
 func main() {
-	log.Println("Starting Bot...")
+	db := database.Init()
 
-	commands.Init()
+	Bot = bot.New(db)
 
-	err := bot.Session.Open()
+	Bot.InitCommands()
+
+	err := Bot.Session.Open()
 	if err != nil { log.Fatal(err) }
-	defer bot.Session.Close()
+	defer Bot.Session.Close()
 
 	log.Println("Bot running...")
  	c := make(chan os.Signal, 1)
