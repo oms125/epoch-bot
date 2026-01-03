@@ -5,8 +5,8 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/oms125/epoch-bot/internal/bot"
-	"github.com/oms125/epoch-bot/internal/database"
+	"github.com/oms125/epoch-bot/bot"
+	"github.com/oms125/epoch-bot/database"
 )
 
 var (
