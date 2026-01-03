@@ -6,22 +6,32 @@ import (
 	"os/signal"
 
 	"github.com/oms125/epoch-bot/bot"
-	"github.com/oms125/epoch-bot/database"
+	"github.com/oms125/epoch-bot/game"
 )
 
 var (
 	Bot *bot.Bot
+	Game *game.Game
 )
 
 func main() {
-	db := database.Init()
+	//Init database
+	Game = game.New()
+	Game.InitTables()
+	defer Game.DB.Close()
 
-	Bot = bot.New(db)
-
+	//Init bot
+	Bot = bot.New(Game)
 	Bot.InitCommands()
 
+	//Start session
+	log.Println("Starting bot session...")
 	err := Bot.Session.Open()
-	if err != nil { log.Fatal(err) }
+	if err != nil { 
+		log.Fatal(err) 
+	} else {
+		log.Println("Bot session started")
+	}
 	defer Bot.Session.Close()
 
 	log.Println("Bot running...")

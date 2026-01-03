@@ -3,32 +3,32 @@ package bot
 import (
 	"log"
 	"os"
-	"database/sql"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/oms125/epoch-bot/game"
 )
 
 type Bot struct {
 	Session *discordgo.Session
-	DB *sql.DB
+	Game *game.Game
 	ID string
 }
 
-func New(db *sql.DB) *Bot {
+func New(g *game.Game) *Bot {
 	botToken, ok := os.LookupEnv("EPOCH_BOT_TOKEN")
-	if !ok { log.Fatal("No Discord Bot Token: EPOCH_BOT_TOKEN") }
+	if !ok { log.Fatal("Failed to initialize bot: EPOCH_BOT_TOKEN") }
 	botID, ok := os.LookupEnv("EPOCH_BOT_ID")
-	if !ok { log.Fatal("No Discord Bot ID: EPOCH_BOT_ID") }
+	if !ok { log.Fatal("Failed to initialize bot: EPOCH_BOT_ID") }
 
 	session, err := discordgo.New("Bot " + botToken)
-	if err != nil { log.Fatal("Failed to start bot: ", err) }
+	if err != nil { log.Fatal("Failed to initialize bot: ", err) }
 
 	session.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAll)
 	session.State.MaxMessageCount = 10
 
 	return &Bot {
 		Session: session,
-		DB: db,
+		Game: g,
 		ID: botID,
 	}
 }

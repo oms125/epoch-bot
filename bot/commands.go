@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/bwmarrin/discordgo"
@@ -8,56 +9,101 @@ import (
 
 type Handler func(s *discordgo.Session, i *discordgo.InteractionCreate)
 
-type Command struct {
-	AppCommand *discordgo.ApplicationCommand
-	CommandHandler Handler
-}
-
 var (
-	Commands map[string]Command = make(map[string]Command)
-	SlashCommandHandlers map[string]Handler = make(map[string]Handler)
+	Commands []*discordgo.ApplicationCommand
+	CommandHandlers map[string]Handler
 )
 
 func (b *Bot) InitCommands() {
-	Commands["test"] = Command {
-		AppCommand: &discordgo.ApplicationCommand {
-		Name: "test",
-		Description: "just a test",
+	//Commands
+	Commands = []*discordgo.ApplicationCommand {
+		{
+		Name: "profile",
+		Description: "View your player profile",
 		},
-		CommandHandler: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			err := s.InteractionRespond(
+		{
+		Name: "levelup",
+		Description: "Level-up your player",
+		},
+		{
+		Name: "save",
+		Description: "Save your current player state",
+		},
+	}
+	//Command Handlers
+	CommandHandlers = map[string]Handler {
+		//Profile Command Handler
+		"profile": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			var msg string
+			p, err := b.Game.GetPlayer(i.Member.User.ID)
+			if err != nil {
+				msg = fmt.Sprintf("Unable to fetch profile data at this time: %v", err)
+			} else {
+				msg = fmt.Sprintf("Level: %d", p.Lvl)
+			}
+			err = s.InteractionRespond(
 				i.Interaction,
 				&discordgo.InteractionResponse {
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData {
-						Content: "Response",
+						Content: msg,
 					},
 				},
 			)
-			if err != nil { log.Printf("Message failed to send for command: test")}
+			if err != nil { log.Printf("Message failed to send for command: profile")}
+		},
+		//Levelup Command Handler
+		"levelup": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			var msg string
+			err := b.Game.LevelUpPlayer(i.Member.User.ID)
+			if err != nil {
+				msg = "Failed to level-up at this time"
+			} else {
+				msg = "Player leveled-up!"
+			}
+			err = s.InteractionRespond(
+				i.Interaction,
+				&discordgo.InteractionResponse {
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData {
+						Content: msg,
+					},
+				},
+			)
+			if err != nil { log.Printf("Message failed to send for command: levelup")}
+		},
+		//Save Command Handler
+		"save": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			var msg string
+			err := b.Game.SavePlayer(i.Member.User.ID)
+			if err != nil {
+				msg = "Failed to save player data at this time"
+			} else {
+				msg = "Player data saved!"
+			}
+			err = s.InteractionRespond(
+				i.Interaction,
+				&discordgo.InteractionResponse {
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData {
+						Content: msg,
+					},
+				},
+			)
+			if err != nil { log.Printf("Message failed to send for command: save")}
 		},
 	}
 
-	b.AddCommands()
-}
-
-func (b *Bot) AddCommands() {
-	for _, command := range Commands {
-		_, err := b.Session.ApplicationCommandCreate(b.ID, "", command.AppCommand)
-		if err != nil { 
-			log.Printf("Error registering command: %s, %s", command.AppCommand.Name, err)
-		} else {
-			log.Printf("Registered command: %s", command.AppCommand.Name)
-		}
-		SlashCommandHandlers[command.AppCommand.Name] = command.CommandHandler
-	}
+	//Register Commands and Handlers
+	_, err := b.Session.ApplicationCommandBulkOverwrite(b.ID, "", Commands)
+	if err != nil { log.Fatal(err) }
 
 	b.Session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		switch i.Type {
 		case discordgo.InteractionApplicationCommand:
 			data := i.ApplicationCommandData()
 
-			if command, ok := SlashCommandHandlers[data.Name]; ok {
+			if command, ok := CommandHandlers[data.Name]; ok {
 				command(s, i)
 			}
 		}
