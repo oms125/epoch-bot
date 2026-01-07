@@ -3,6 +3,7 @@ package game
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	_ "modernc.org/sqlite"
 )
@@ -12,7 +13,8 @@ type Player struct {
 	Lvl int
 	InvSize int
 
-	Inv Inventory
+	Inv map[*Item]int
+	Arm map[int]ToolMetadata
 }
 
 //Game Logic
@@ -22,6 +24,35 @@ func (g *Game) GetPlayer(ID string) (*Player, error) {
 		return g.loadPlayer(ID)
 	}
 	return p, nil
+}
+
+func (p *Player) AddItem(item *Item, quantity int) error {
+	if (len(p.Inv) == p.InvSize && p.Inv[item] == 0) {
+		return &InvFullError{}
+	}
+	var total int = p.Inv[item] + quantity
+	if (total > 99) {
+		p.Inv[item] = 99
+		return &ItemMaxError{ Item: item, Overflow: total-99 }
+	}
+	p.Inv[item] = total
+	return nil
+}
+
+func (p *Player) RemoveItem(item *Item, quantity int) {
+	if (quantity >= p.Inv[item]) {
+		delete(p.Inv, item)
+	} else {
+		p.Inv[item] -= quantity
+	}
+}
+
+func (p *Player) GetInventory() string {
+	var invString strings.Builder; invString.WriteString("*Inventory*\n")
+	for item, quantity := range p.Inv {
+		fmt.Fprintf(&invString, "%s: %d\n", item.Name, quantity)
+	}
+	return invString.String()
 }
 
 //Database Logic

@@ -1,24 +1,49 @@
 package game
 
-var items map[int]Item
+import "fmt"
 
-type Item struct {
-	ID int
-	Name string
-	MaxQuantity int
-	MaxDurability int
+var (
+	//Constant Item Data Structures
+	ITEMS map[int]*Item
+	TOOLS map[int]*Tool
+)
+
+//Constant Item Data
+type (
+	Item struct {
+		ID int
+		Name string
+	}
+	Tool struct {
+		Item
+		MaxDurability int
+	}
+)
+
+//Metadata
+type (
+	ToolMetadata struct {
+		Durability int
+	}
+)
+
+//Errors
+type (
+	InvFullError struct {}
+	ItemMaxError struct { 
+		Item *Item
+		Overflow int
+	}
+)
+func (err *InvFullError) Error() string {
+	return "Inventory Full"
 }
-
-type ItemMetadata struct {
-	Quantity int
-	Durability int
-}
-
-type Inventory struct {
-	Items map[int]ItemMetadata
+func (err *ItemMaxError) Error() string {
+	return fmt.Sprintf("Max Stack Size Reached for %s: %d", err.Item.Name, err.Overflow)
 }
 
 //Game Logic
+
 
 //Init Items
 const (
@@ -28,57 +53,35 @@ const (
 )
 
 func init() {
-	items = map[int]Item {
-		ROCK: makeMaterial(ROCK, "Rock"),
-		STICK: makeMaterial(STICK, "Stick"),
-		SWORD: makeTool(SWORD, "Sword", 100),
+	ITEMS = map[int]*Item {
+		ROCK: {ID: ROCK, Name: "Rock"},
+		STICK: {ID: STICK, Name: "Stick"},
 	}
-}
-
-func makeMaterial(id int, name string) Item {
-	return Item {
-		ID: id,
-		Name: name,
-		MaxQuantity: 99,
-		MaxDurability: -1,
-	}
-}
-
-func makeTool(id int, name string, maxDurability int) Item {
-	return Item {
-		ID: id,
-		Name: name,
-		MaxQuantity: 1,
-		MaxDurability: maxDurability,
+	TOOLS = map[int]*Tool {
+		SWORD: {Item: Item{ID: SWORD, Name: "Sword"}, MaxDurability: 100},
 	}
 }
 
 
 //Database Logic
 func (g *Game) loadInventory(p *Player) error {
-	query := `SELECT item_id, quantity, durability FROM inventory WHERE user_id = ?`
+	query := `SELECT item_id, quantity FROM inventory WHERE user_id = ?`
 	rows, err := g.DB.Query(query, p.ID)
 	if err != nil { return err }
 	defer rows.Close()
 
-	items := make(map[int]ItemMetadata)
+	items := make(map[*Item]int)
 
 	for rows.Next() {
 		var (
 			id int
 			quantity int
-			durability int
 		)
-		rows.Scan(&id, &quantity, &durability)
-		items[id] = ItemMetadata{
-			Quantity: quantity,
-			Durability: durability,
-		}
+		rows.Scan(&id, &quantity)
+		items[ITEMS[id]] = quantity
 	}
 
-	p.Inv = Inventory {
-		Items: items,
-	}
+	p.Inv = items
 	return nil
 }
 
@@ -90,11 +93,11 @@ func (g *Game) saveInventory(p *Player) error {
 	_, err = tx.Exec(`DELETE FROM inventory WHERE user_id = ?`, p.ID)
 	if err != nil { return err }
 
-	stmt, err := tx.Prepare(`INSERT INTO inventory (item_id, user_id, quantity, durability) VALUES (?, ?, ?, ?)`)
+	stmt, err := tx.Prepare(`INSERT INTO inventory (item_id, user_id, quantity) VALUES (?, ?, ?)`)
 	if err != nil { return err }
 
-	for item, meta := range p.Inv.Items {
-		_, err := stmt.Exec(item, p.ID, meta.Quantity, meta.Durability)
+	for item, quantity := range p.Inv {
+		_, err := stmt.Exec(p.ID, item, quantity)
 		if err != nil { return err }
 	}
 

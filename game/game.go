@@ -41,17 +41,16 @@ func (g *Game) InitTables() {
 	tables := []string {
 		//Player Table
 		`CREATE TABLE IF NOT EXISTS players (
-			id TEXT PRIMARY KEY NOT NULL UNIQUE,
+			id TEXT PRIMARY KEY,
 			lvl INTEGER DEFAULT 1,
 			inv_size INTEGER DEFAULT 50
 		);`,
 		//Inventory Table
 		`CREATE TABLE IF NOT EXISTS inventory (
-			column INTEGER PRIMARY KEY AUTOINCREMENT,
-			item_id INTEGER,
 			user_id TEXT,
-			quantity INTEGER,
-			durability INTEGER
+			item_id INTEGER,
+			quantity INTEGER
+			PRIMARY KEY (user_id, item_id)
 		);`,
 	}
 
