@@ -13,8 +13,7 @@ type Player struct {
 	Lvl int
 	InvSize int
 
-	Inv map[*Item]int
-	Arm map[int]ToolMetadata
+	Inv []Item
 }
 
 //Game Logic
@@ -26,31 +25,29 @@ func (g *Game) GetPlayer(ID string) (*Player, error) {
 	return p, nil
 }
 
-func (p *Player) AddItem(item *Item, quantity int) error {
-	if (len(p.Inv) == p.InvSize && p.Inv[item] == 0) {
-		return &InvFullError{}
+func (p *Player) AddItem(item Item, quantity int) error {
+	switch item.Type() {
+	case MATERIAL_TYPE:
+
+	case TOOL_TYPE:
+
 	}
-	var total int = p.Inv[item] + quantity
-	if (total > 99) {
-		p.Inv[item] = 99
-		return &ItemMaxError{ Item: item, Overflow: total-99 }
-	}
-	p.Inv[item] = total
 	return nil
 }
 
 func (p *Player) RemoveItem(item *Item, quantity int) {
-	if (quantity >= p.Inv[item]) {
-		delete(p.Inv, item)
-	} else {
-		p.Inv[item] -= quantity
-	}
+	
 }
 
 func (p *Player) GetInventory() string {
 	var invString strings.Builder; invString.WriteString("*Inventory*\n")
-	for item, quantity := range p.Inv {
-		fmt.Fprintf(&invString, "%s: %d\n", item.Name, quantity)
+	for _, item := range p.Inv {
+		switch item.Type() {
+		case MATERIAL_TYPE:
+			fmt.Fprintf(&invString, "%s: %d\n", item.GetName(), item.(*Material).GetQuantity())
+		case TOOL_TYPE:
+			fmt.Fprintf(&invString, "%s: 1\n", item.GetName())
+		}
 	}
 	return invString.String()
 }
@@ -75,9 +72,8 @@ func (g *Game) loadPlayer(ID string) (*Player, error) {
 	}
 	//Load Player Inventory
 	err = g.loadInventory(p)
-	if err != nil {
-		return nil, err
-	}
+	if err != nil { return nil, err }
+
 	g.ActivePlayers[ID] = p
 	return p, nil
 }
@@ -104,5 +100,7 @@ func (g *Game) SavePlayer(ID string) error {
 	if err != nil { return err }
 
 	err = g.saveInventory(p)
-	return err
+	if err != nil { return err }
+
+	return nil
 }

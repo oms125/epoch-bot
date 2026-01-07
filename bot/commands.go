@@ -6,6 +6,11 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+var (
+	PERM_ALL int64 = discordgo.PermissionUseApplicationCommands
+	PERM_ADMIN int64 = discordgo.PermissionAdministrator
+)
+
 type Handler func(s *discordgo.Session, i *discordgo.InteractionCreate)
 
 var (

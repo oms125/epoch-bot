@@ -14,7 +14,7 @@ type Game struct {
 
 func New() *Game {
 	log.Println("Initializing database...")
-	db, err := sql.Open("sqlite", "tmp.db")
+	db, err := sql.Open("sqlite", "epoch.db")
 	if err != nil { 
 		log.Fatal("Failed to initialize database: ", err)
 	} else {
@@ -47,10 +47,11 @@ func (g *Game) InitTables() {
 		);`,
 		//Inventory Table
 		`CREATE TABLE IF NOT EXISTS inventory (
+			column INTEGER PRIMARY KEY,
 			user_id TEXT,
 			item_id INTEGER,
-			quantity INTEGER
-			PRIMARY KEY (user_id, item_id)
+			quantity INTEGER,
+			durability INTEGER
 		);`,
 	}
 
