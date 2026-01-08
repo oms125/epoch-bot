@@ -8,6 +8,10 @@ import (
 	"github.com/oms125/epoch-bot/game"
 )
 
+var (
+	GuildID string
+)
+
 type Bot struct {
 	Session *discordgo.Session
 	Game *game.Game
@@ -19,6 +23,9 @@ func New(g *game.Game) *Bot {
 	if !ok { log.Fatal("Failed to initialize bot: EPOCH_BOT_TOKEN") }
 	botID, ok := os.LookupEnv("EPOCH_BOT_ID")
 	if !ok { log.Fatal("Failed to initialize bot: EPOCH_BOT_ID") }
+	guildID, ok := os.LookupEnv("EPOCH_BOT_GUILD_ID")
+	if !ok { log.Fatal("Failed to initialize bot: EPOCH_BOT_GUILD_ID")}
+	GuildID = guildID
 
 	session, err := discordgo.New("Bot " + botToken)
 	if err != nil { log.Fatal("Failed to initialize bot: ", err) }

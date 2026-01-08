@@ -7,18 +7,18 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func (b *Bot) ProfileCommand() (*discordgo.ApplicationCommand, Handler) {
+func (b *Bot) ArmoryCommand() (*discordgo.ApplicationCommand, Handler) {
 	return &discordgo.ApplicationCommand {
-		Name: "profile",
-		Description: "View your player profile",
+		Name: "armory",
+		Description: "View your armory",
 	},
 	func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		var msg string
 		p, err := b.Game.GetPlayer(i.Member.User.ID)
 		if err != nil {
-			msg = "Unable to fetch profile data at this time"
+			msg = "Unable to fetch player data at this time"
 		} else {
-			msg = p.GetInventory()
+			msg = p.GetArmory()
 		}
 		err = s.InteractionRespond(
 			i.Interaction,
@@ -29,6 +29,6 @@ func (b *Bot) ProfileCommand() (*discordgo.ApplicationCommand, Handler) {
 				},
 			},
 		)
-		if err != nil { log.Printf("Failed interaction for command: profile, %v", err) }
+		if err != nil { log.Printf("Failed interaction for command: armory, %v", err) }
 	}
 }

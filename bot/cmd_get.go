@@ -1,7 +1,7 @@
 package bot
 
 import (
-	"fmt"
+	"errors"
 	"log"
 
 	"github.com/bwmarrin/discordgo"
@@ -34,7 +34,23 @@ func (b *Bot) GetCommand() (*discordgo.ApplicationCommand, Handler) {
 		if err != nil {
 			msg = "Unable to fetch player data at this time"
 		} else {
-			id := i.ApplicationCommandData().Options[0].IntValue()
+			id := int(i.ApplicationCommandData().Options[0].IntValue())
+			var quantity = 1
+			if (len(i.ApplicationCommandData().Options) > 1) {
+				quantity = int(i.ApplicationCommandData().Options[1].IntValue())
+			}
+			err := p.AddItem(id, quantity)
+			var ime *game.ItemMaxError
+			var ife *game.InvFullError
+			if errors.As(err, &ime) {
+				msg = ime.Error()
+			} else if errors.As(err, &ife) {
+				msg = ife.Error()
+			} else if err != nil {
+				msg = "Unable to add item: " + err.Error()
+			} else {
+				msg = "Item added!"
+			}
 		}
 		err = s.InteractionRespond(
 			i.Interaction,
@@ -45,6 +61,6 @@ func (b *Bot) GetCommand() (*discordgo.ApplicationCommand, Handler) {
 				},
 			},
 		)
-		if err != nil { log.Printf("Failed interaction for command: profile, %v", err) }
+		if err != nil { log.Printf("Failed interaction for command: get, %v", err) }
 	}
 }

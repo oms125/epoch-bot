@@ -43,14 +43,21 @@ func (g *Game) InitTables() {
 		`CREATE TABLE IF NOT EXISTS players (
 			id TEXT PRIMARY KEY,
 			lvl INTEGER DEFAULT 1,
-			inv_size INTEGER DEFAULT 50
+			inv_size INTEGER DEFAULT 50,
+			arm_size INTEGER DEFAULT 50
 		);`,
 		//Inventory Table
 		`CREATE TABLE IF NOT EXISTS inventory (
-			column INTEGER PRIMARY KEY,
 			user_id TEXT,
 			item_id INTEGER,
 			quantity INTEGER,
+			PRIMARY KEY (user_id, item_id)
+		);`,
+		//Armory Table
+		`CREATE TABLE IF NOT EXISTS armory (
+			column INTEGER PRIMARY KEY,
+			user_id TEXT,
+			item_id INTEGER,
 			durability INTEGER
 		);`,
 	}
