@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/bwmarrin/discordgo"
 	_ "modernc.org/sqlite"
 )
 
@@ -16,19 +17,14 @@ type Player struct {
 	InvSize int
 	ArmSize int
 
-	Inv map[int]*Material
-	Arm []*Tool
+	Inv Inventory
+	Arm Armory
 }
+
+type Inventory map[int]*Material
+type Armory []*Tool
 
 //Game Logic
-func (g *Game) GetPlayer(ID string) (*Player, error) {
-	p, ok := g.ActivePlayers[ID]
-	if !ok {
-		return g.loadPlayer(ID)
-	}
-	return p, nil
-}
-
 func (p *Player) AddItem(id int, quantity ...int) error {
 	data := ITEM_DATA[id]
 	switch data.Type() {
@@ -85,23 +81,31 @@ func (p *Player) RemoveTool(idx int) {
 	p.Arm = slices.Delete(p.Arm, idx, idx+1)
 }
 
-func (p *Player) GetInventory() string {
+func (g *Game) GetPlayer(member *discordgo.Member) (*Player, error) {
+	return g.GetPlayerByID(member.User.ID)
+}
+
+func (g *Game) GetPlayerByID(ID string) (*Player, error) {
+	p, ok := g.ActivePlayers[ID]
+	if !ok {
+		return g.loadPlayer(ID)
+	}
+	return p, nil
+}
+
+//Inventory
+func (i Inventory) ToString() string {
 	var invString strings.Builder; 
-	//invString.WriteString("*Inventory*\n")
-	size := len(p.Inv)
-	fmt.Fprintf(&invString, "*Inventory:* (%d/%d)\n", size, p.InvSize)
-	for _, mat := range p.Inv {
+	for _, mat := range i {
 		fmt.Fprintf(&invString, "%s: %d\n", mat.Name, mat.Quantity)
 	}
 	return invString.String()
 }
 
-func (p *Player) GetArmory() string {
+//Armory
+func (arm Armory) ToString() string {
 	var armString strings.Builder; 
-	//armString.WriteString("*Armory* ")
-	size := len(p.Arm)
-	fmt.Fprintf(&armString, "*Armory:* (%d/%d)\n", size, p.ArmSize)
-	for _, tool := range p.Arm {
+	for _, tool := range arm {
 		fmt.Fprintf(&armString, "%s: (%d/%d)\n", tool.Name, tool.Durability, tool.MaxDurability)
 	}
 	return armString.String()
@@ -145,7 +149,11 @@ func (g *Game) addPlayer(ID string) error {
 	return nil
 }
 
-func (g *Game) SavePlayer(ID string) error {
+func (g *Game) SavePlayer(member *discordgo.Member) error {
+	return g.savePlayer(member.User.ID)
+}
+
+func (g *Game) savePlayer(ID string) error {
 	p, ok := g.ActivePlayers[ID]
 	if !ok { return nil }
 

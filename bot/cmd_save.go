@@ -7,13 +7,14 @@ import (
 )
 
 func (b *Bot) SaveCommand() (*discordgo.ApplicationCommand, Handler) {
-	return &discordgo.ApplicationCommand {
+	cmd := &discordgo.ApplicationCommand{
 		Name: "save",
 		Description: "Save your current player state",
-	},
+	}
+	return cmd,
 	func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		var msg string
-		err := b.Game.SavePlayer(i.Member.User.ID)
+		err := b.Game.SavePlayer(i.Member)
 		if err != nil {
 			msg = "Failed to save player data at this time"
 		} else {

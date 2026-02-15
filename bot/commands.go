@@ -6,14 +6,12 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-var (
-	PERM_ALL int64 = discordgo.PermissionUseApplicationCommands
-	PERM_ADMIN int64 = discordgo.PermissionAdministrator
-)
-
 type Handler func(s *discordgo.Session, i *discordgo.InteractionCreate)
 
 var (
+	PERM_ALL int64 = discordgo.PermissionUseApplicationCommands
+	PERM_ADMIN int64 = discordgo.PermissionAdministrator
+
 	Commands []*discordgo.ApplicationCommand
 	CommandHandlers map[string]Handler
 )
@@ -61,4 +59,31 @@ func (b *Bot) registerCommands() {
 			}
 		}
 	})
+}
+
+//General command helper functions
+func GetAuthor(m *discordgo.Member) *discordgo.MessageEmbedAuthor {
+	return &discordgo.MessageEmbedAuthor{
+		Name: m.User.Username,
+		IconURL: m.AvatarURL(""),
+	}
+}
+
+func Embed(s *discordgo.Session, i *discordgo.InteractionCreate, msg *discordgo.MessageEmbed, files ...*discordgo.File) error {
+	return s.InteractionRespond(
+		i.Interaction,
+		&discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Embeds: []*discordgo.MessageEmbed{
+					msg,
+				},
+				Files: files,
+			},
+		},
+	)
+}
+
+func Error(cmdName string, err error) {
+	log.Printf("Failed interaction for command %s:\n%v", cmdName, err)
 }

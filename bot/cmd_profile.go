@@ -14,11 +14,11 @@ func (b *Bot) ProfileCommand() (*discordgo.ApplicationCommand, Handler) {
 	},
 	func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		var msg string
-		p, err := b.Game.GetPlayer(i.Member.User.ID)
+		p, err := b.Game.GetPlayer(i.Member)
 		if err != nil {
 			msg = "Unable to fetch profile data at this time"
 		} else {
-			msg = p.GetInventory()
+			msg = p.Inv.ToString()
 		}
 		err = s.InteractionRespond(
 			i.Interaction,

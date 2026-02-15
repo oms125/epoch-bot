@@ -1,34 +1,47 @@
 package bot
 
 import (
-	//"fmt"
-	"log"
-
 	"github.com/bwmarrin/discordgo"
 )
 
 func (b *Bot) InventoryCommand() (*discordgo.ApplicationCommand, Handler) {
-	return &discordgo.ApplicationCommand {
-		Name: "inventory",
+	cmd := &discordgo.ApplicationCommand{
+		Name:        "inventory",
 		Description: "View your inventory",
-	},
-	func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		var msg string
-		p, err := b.Game.GetPlayer(i.Member.User.ID)
-		if err != nil {
-			msg = "Unable to fetch player data at this time"
-		} else {
-			msg = p.GetInventory()
+	}
+	return cmd,
+		func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			_, err := b.Game.GetPlayer(i.Member)
+
+			embed, file := b.invMessage(i)
+			err = Embed(s, i, embed, file...)
+
+			if err != nil {
+				Error(cmd.Name, err)
+			}
 		}
-		err = s.InteractionRespond(
-			i.Interaction,
-			&discordgo.InteractionResponse {
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData {
-					Content: msg,
-				},
-			},
-		)
-		if err != nil { log.Printf("Failed interaction for command: inventory, %v", err) }
+}
+
+func (b *Bot) invMessage(i *discordgo.InteractionCreate) (*discordgo.MessageEmbed, []*discordgo.File) {
+	p, _ := b.Game.GetPlayer(i.Member)
+	img := Image{
+		Name: "inventory_icon.png",
+		Type: ICONS,
+	}
+
+	return &discordgo.MessageEmbed{
+		Author: GetAuthor(i.Member),
+		Thumbnail: &discordgo.MessageEmbedThumbnail{
+			URL: img.Attach(),
+		},
+		Color: 0x999999,
+		Title: "Inventory",
+		Description: p.Inv.ToString(),
+	},
+	[]*discordgo.File{
+		{
+			Name: img.Name,
+			Reader: img.File(),
+		},
 	}
 }

@@ -30,7 +30,7 @@ func (b *Bot) GetCommand() (*discordgo.ApplicationCommand, Handler) {
 	},
 	func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		var msg string
-		p, err := b.Game.GetPlayer(i.Member.User.ID)
+		p, err := b.Game.GetPlayer(i.Member)
 		if err != nil {
 			msg = "Unable to fetch player data at this time"
 		} else {

@@ -12,6 +12,10 @@ type Game struct {
 	ActivePlayers map[string]*Player
 }
 
+//Game Logic
+
+
+//Database Logic
 func New() *Game {
 	log.Println("Initializing database...")
 	db, err := sql.Open("sqlite", "epoch.db")
