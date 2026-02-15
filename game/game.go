@@ -2,13 +2,13 @@ package game
 
 import (
 	"log"
-	"database/sql"
 
+	"github.com/jmoiron/sqlx"
 	_ "modernc.org/sqlite"
 )
 
 type Game struct {
-	DB *sql.DB
+	DB *sqlx.DB
 	ActivePlayers map[string]*Player
 }
 
@@ -18,7 +18,7 @@ type Game struct {
 //Database Logic
 func New() *Game {
 	log.Println("Initializing database...")
-	db, err := sql.Open("sqlite", "epoch.db")
+	db, err := sqlx.Connect("sqlite", "epoch.db")
 	if err != nil { 
 		log.Fatal("Failed to initialize database: ", err)
 	} else {
@@ -60,10 +60,9 @@ func (g *Game) InitTables() {
 		//Armory Table
 		`CREATE TABLE IF NOT EXISTS armory (
 			column INTEGER PRIMARY KEY,
-			user_id TEXT,
-			item_id INTEGER,
-			durability INTEGER
-		);`,
+			user_id TEXT, ` +
+			FormatFields(armory_fields, false) + 
+		`);`,
 	}
 
 	for _, table := range tables {

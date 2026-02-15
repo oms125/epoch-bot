@@ -55,22 +55,6 @@ type (
 		ItemMetadata
 		Quantity int
 	}
-	//Tool Structures
-	Tool struct {
-		Item
-		*ToolData
-		*ToolMetadata
-	}
-	ToolData struct {
-		ItemData
-		ID int
-		Name string
-		MaxDurability int
-	}
-	ToolMetadata struct {
-		ItemMetadata
-		Durability int
-	}
 	//Errors
 	ItemIDError struct {
 		ID int
@@ -175,44 +159,3 @@ func (g *Game) saveInventory(p *Player) error {
 	return tx.Commit()
 }
 
-func (g *Game) loadArmory(p *Player) error {
-	query := `SELECT item_id, durability FROM armory WHERE user_id = ?`
-	rows, err := g.DB.Query(query, p.ID)
-	if err != nil { return err }
-	defer rows.Close()
-
-	arm := make([]*Tool, 0, p.ArmSize)
-
-	for rows.Next() {
-		var (
-			id int
-			durability int
-		)
-		rows.Scan(&id, &durability)
-		data := ITEM_DATA[id].(*ToolData)
-		arm = append(arm, &Tool{
-			ToolData: data,
-			ToolMetadata: &ToolMetadata{ Durability: durability },
-		})
-		
-	}
-
-	p.Arm = arm
-	return nil
-}
-
-func (g *Game) saveArmory(p *Player) error {
-	tx, err := g.DB.Begin()
-	if err != nil { return err }
-	defer tx.Rollback()
-
-	_, err = tx.Exec(`DELETE FROM armory WHERE user_id = ?`, p.ID)
-	if err != nil { return err }
-
-	for _, item := range p.Arm {
-		_, err = tx.Exec(`INSERT INTO armory (user_id, item_id, durability) VALUES (?, ?, ?)`, p.ID, item.ID, item.Durability)
-		if err != nil { return err }
-	}
-
-	return tx.Commit()
-}

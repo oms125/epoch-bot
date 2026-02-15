@@ -17,6 +17,7 @@ func (b *Bot) SaveCommand() (*discordgo.ApplicationCommand, Handler) {
 		err := b.Game.SavePlayer(i.Member)
 		if err != nil {
 			msg = "Failed to save player data at this time"
+			log.Printf("Failed to save data for player %s:\n%v", i.Member.User.ID, err)
 		} else {
 			msg = "Player data saved!"
 		}

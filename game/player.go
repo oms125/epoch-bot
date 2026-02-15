@@ -22,7 +22,6 @@ type Player struct {
 }
 
 type Inventory map[int]*Material
-type Armory []*Tool
 
 //Game Logic
 func (p *Player) AddItem(id int, quantity ...int) error {
@@ -164,7 +163,7 @@ func (g *Game) savePlayer(ID string) error {
 
 	_, err := g.DB.Exec(query, p.Lvl, ID)
 	if err != nil { return err }
-
+	
 	err = g.saveInventory(p)
 	if err != nil { return err }
 	err = g.saveArmory(p)
