@@ -2,17 +2,16 @@ package bot
 
 import (
 	"log"
-
-	"github.com/bwmarrin/discordgo"
+	disc "github.com/bwmarrin/discordgo"
 )
 
-func (b *Bot) SaveCommand() (*discordgo.ApplicationCommand, Handler) {
-	cmd := &discordgo.ApplicationCommand{
+func (b *Bot) SaveCommand() (*disc.ApplicationCommand, Handler) {
+	cmd := &disc.ApplicationCommand{
 		Name: "save",
 		Description: "Save your current player state",
 	}
 	return cmd,
-	func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	func(s *disc.Session, i *disc.InteractionCreate) {
 		var msg string
 		err := b.Game.SavePlayer(i.Member)
 		if err != nil {
@@ -23,9 +22,9 @@ func (b *Bot) SaveCommand() (*discordgo.ApplicationCommand, Handler) {
 		}
 		err = s.InteractionRespond(
 			i.Interaction,
-			&discordgo.InteractionResponse {
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData {
+			&disc.InteractionResponse {
+				Type: disc.InteractionResponseChannelMessageWithSource,
+				Data: &disc.InteractionResponseData {
 					Content: msg,
 				},
 			},

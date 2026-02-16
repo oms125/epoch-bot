@@ -1,0 +1,20 @@
+package bot
+
+import (
+	disc "github.com/bwmarrin/discordgo"
+)
+
+func (b *Bot) Command() (*disc.ApplicationCommand, Handler) {
+	cmd := &disc.ApplicationCommand{
+		Name:        "",
+		Description: "",
+	}
+	return cmd,
+		func(s *disc.Session, i *disc.InteractionCreate) {
+			_, err := b.Game.GetPlayer(i.Member)
+
+			err = Embed(s, i, &disc.MessageEmbed{})
+
+			if err != nil { Error(cmd.Name, err) }
+		}
+}

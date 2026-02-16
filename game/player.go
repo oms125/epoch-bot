@@ -2,85 +2,18 @@ package game
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
-	"slices"
-	"strings"
-
-	"github.com/bwmarrin/discordgo"
+	disc "github.com/bwmarrin/discordgo"
 	_ "modernc.org/sqlite"
+	. "github.com/oms125/epoch-bot/game/player"
 )
 
-type Player struct {
-	ID string
-	Lvl int
-	InvSize int
-	ArmSize int
-
-	Inv Inventory
-	Arm Armory
+func ErrorMsg(msg string) string {
+	return "ERROR; " + msg + "\n%w"
 }
 
-type Inventory map[int]*Material
-
-//Game Logic
-func (p *Player) AddItem(id int, quantity ...int) error {
-	data := ITEM_DATA[id]
-	switch data.Type() {
-	case TYPE_MATERIAL:
-		num := 1
-		if len(quantity) > 0 {
-			num = quantity[0]
-		}
-		return p.AddMaterial(id, num)
-	case TYPE_TOOL:
-		return p.AddTool(NewDefaultTool(id))
-	}
-	return fmt.Errorf("Invalid item ID")
-}
-
-func (p *Player) AddMaterial(id int, quantity int) error {
-	if quantity <= 0 { return nil }
-	item := ITEM_DATA[id].(*MaterialData)
-	mat, ok := p.Inv[id]
-	if !ok && len(p.Inv) >= p.InvSize {
-		return &InvFullError{}
-	} else if !ok {
-		p.Inv[id] = &Material{
-			MaterialData: item,
-			MaterialMetadata: &MaterialMetadata{ Quantity: 0 },
-		}
-		mat = p.Inv[id]
-	}
-	err := mat.ChangeQuantity(quantity)
-	return err
-}
-
-func (p *Player) AddTool(tool *Tool) error {
-	if len(p.Arm) >= p.ArmSize {
-		return &ArmFullError{}
-	}
-	p.Arm = append(p.Arm, tool)
-	return nil
-}
-
-func (p *Player) RemoveMaterial(id int, quantity int) error {
-	if quantity <= 0 { return nil }
-	mat, ok := p.Inv[id]
-	if !ok { return nil }
-	err := mat.ChangeQuantity(quantity)
-	var iee *ItemEmptyError
-	if errors.As(err, &iee) {
-		delete(p.Inv, id)
-	}
-	return err
-}
-
-func (p *Player) RemoveTool(idx int) {
-	p.Arm = slices.Delete(p.Arm, idx, idx+1)
-}
-
-func (g *Game) GetPlayer(member *discordgo.Member) (*Player, error) {
+//Player
+func (g *Game) GetPlayer(member *disc.Member) (*Player, error) {
 	return g.GetPlayerByID(member.User.ID)
 }
 
@@ -92,26 +25,12 @@ func (g *Game) GetPlayerByID(ID string) (*Player, error) {
 	return p, nil
 }
 
-//Inventory
-func (i Inventory) ToString() string {
-	var invString strings.Builder; 
-	for _, mat := range i {
-		fmt.Fprintf(&invString, "%s: %d\n", mat.Name, mat.Quantity)
-	}
-	return invString.String()
+func (g *Game) SavePlayer(member *disc.Member) error {
+	return g.savePlayer(member.User.ID)
 }
 
-//Armory
-func (arm Armory) ToString() string {
-	var armString strings.Builder; 
-	for _, tool := range arm {
-		fmt.Fprintf(&armString, "%s: (%d/%d)\n", tool.Name, tool.Durability, tool.MaxDurability)
-	}
-	return armString.String()
-}
-
-//Database Logic
 func (g *Game) loadPlayer(ID string) (*Player, error) {
+	errMsg := ErrorMsg("Failed to load player %s")
 	//Load Player Data
 	p := &Player {}
 	query := `SELECT id, lvl, inv_size, arm_size FROM players WHERE id = ?`
@@ -124,35 +43,36 @@ func (g *Game) loadPlayer(ID string) (*Player, error) {
 	if err != nil { 
 		if err == sql.ErrNoRows {
 			err = g.addPlayer(ID)
-			if err != nil { return nil, err }
+			if err != nil { return nil, fmt.Errorf(errMsg, ID, err) }
 			return g.loadPlayer(ID)
 		}
 		return nil, err 
 	}
 	//Load Player Inventory
 	err = g.loadInventory(p)
-	if err != nil { return nil, err }
+	if err != nil { return nil, fmt.Errorf(errMsg, ID, err) }
 	err = g.loadArmory(p)
-	if err != nil { return nil, err }
+	if err != nil { return nil, fmt.Errorf(errMsg, ID, err) }
+	p.BuildEquipment()
 
 	g.ActivePlayers[ID] = p
 	return p, nil
 }
 
 func (g *Game) addPlayer(ID string) error {
+	errMsg := ErrorMsg("Failed to add player %s")
+
 	query := `INSERT INTO players (id) VALUES (?)`
 	_, err := g.DB.Exec(query, ID)
 	if err != nil {
-		return fmt.Errorf("Could not add player: %s, %v", ID, err)
+		return fmt.Errorf(errMsg, ID, err)
 	}
 	return nil
 }
 
-func (g *Game) SavePlayer(member *discordgo.Member) error {
-	return g.savePlayer(member.User.ID)
-}
-
 func (g *Game) savePlayer(ID string) error {
+	errMsg := ErrorMsg("Failed to save player %s")
+
 	p, ok := g.ActivePlayers[ID]
 	if !ok { return nil }
 
@@ -162,12 +82,139 @@ func (g *Game) savePlayer(ID string) error {
 	WHERE id = ?`
 
 	_, err := g.DB.Exec(query, p.Lvl, ID)
-	if err != nil { return err }
+	if err != nil { return fmt.Errorf(errMsg, ID, err) }
 	
 	err = g.saveInventory(p)
-	if err != nil { return err }
+	if err != nil { return fmt.Errorf(errMsg, ID, err) }
 	err = g.saveArmory(p)
-	if err != nil { return err }
+	if err != nil { return fmt.Errorf(errMsg, ID, err) }
 
 	return nil
+}
+
+//Armory
+type (
+	loadTool struct {
+		ID int `db:"item_id"`
+		ToolMetadata `db:",inline"`
+	}
+	saveTool struct {
+		UserID string `db:"user_id"`
+		ItemID int `db:"item_id"`
+		ToolMetadata `db:",inline"`
+	}
+)
+
+func (g *Game) loadArmory(p *Player) error {
+	errMsg := ErrorMsg("Failed to load armory for player %s")
+
+	query := fmt.Sprintf("SELECT %s FROM armory WHERE user_id = ?", FormatFields(ArmoryFields, false))
+	
+	rows, err := g.DB.Queryx(query, p.ID)
+	if err != nil { return fmt.Errorf(errMsg, p.ID, err) }
+	defer rows.Close()
+	
+	arm := make([]*Tool, 0, p.ArmSize)
+
+	for rows.Next() {
+		tool := &loadTool{}
+		rows.StructScan(&tool)
+		data := ITEM_DATA[tool.ID].(*ToolData)
+		arm = append(arm, &Tool{
+			ToolData: data,
+			ToolMetadata: &tool.ToolMetadata,
+		})
+	}
+	
+	p.Arm = arm
+	return nil
+}
+
+func (g *Game) saveArmory(p *Player) error {
+	errMsg := ErrorMsg("Failed to save armory for player %s")
+
+	tx, err := g.DB.Beginx()
+	if err != nil { return fmt.Errorf(errMsg, p.ID, err) }
+	defer tx.Rollback()
+
+	_, err = tx.Exec(`DELETE FROM armory WHERE user_id = ?`, p.ID)
+	if err != nil { return fmt.Errorf(errMsg, p.ID, err) }
+
+	query := fmt.Sprintf(`INSERT INTO armory (user_id, %s) VALUES (:user_id, %s)`,
+		FormatFields(ArmoryFields, false), FormatFields(ArmoryFields, true))
+	for _, item := range p.Arm {
+		meta := &saveTool{
+			UserID: p.ID,
+			ItemID: item.ID,
+			ToolMetadata: *item.ToolMetadata,
+		}
+		_, err = tx.NamedExec(query, meta)
+		if err != nil { return fmt.Errorf(errMsg, p.ID, err) }
+	}
+
+	return tx.Commit()
+}
+
+//Inventory
+type (
+	loadMaterial struct {
+		ID int `db:"item_id"`
+		MaterialMetadata `db:",inline"`
+	}
+	saveMaterial struct {
+		UserID string `db:"user_id"`
+		ItemID int `db:"item_id"`
+		MaterialMetadata `db:",inline"`
+	}
+)
+
+func (g *Game) loadInventory(p *Player) error {
+	errMsg := ErrorMsg("Failed to load inventory for player %s")
+
+	query := fmt.Sprintf("SELECT %s FROM inventory WHERE user_id = ?", FormatFields(InventoryFields, false))
+	
+	rows, err := g.DB.Queryx(query, p.ID)
+	if err != nil { return fmt.Errorf(errMsg, p.ID, err) }
+	defer rows.Close()
+
+	inv := make(map[int]*Material)
+
+	for rows.Next() {
+		mat := &loadMaterial{}
+		rows.StructScan(&mat)
+		data := ITEM_DATA[mat.ID].(*MaterialData)
+		inv[mat.ID] = &Material{
+			MaterialData: data,
+			MaterialMetadata: &mat.MaterialMetadata,
+		}
+		
+	}
+
+	p.Inv = inv
+	return nil
+}
+
+func (g *Game) saveInventory(p *Player) error {
+	errMsg := ErrorMsg("Failed to save inventory for player %s")
+
+	tx, err := g.DB.Beginx()
+	if err != nil { return fmt.Errorf(errMsg, p.ID, err) }
+	defer tx.Rollback()
+
+	_, err = tx.Exec(`DELETE FROM inventory WHERE user_id = ?`, p.ID)
+	if err != nil { return fmt.Errorf(errMsg, p.ID, err) }
+
+	query := fmt.Sprintf(`INSERT INTO inventory (user_id, %s) VALUES (:user_id, %s)`,
+		FormatFields(InventoryFields, false), FormatFields(InventoryFields, true))
+	for id, item := range p.Inv {
+		meta := &saveMaterial{
+			UserID: p.ID,
+			ItemID: id,
+			MaterialMetadata: *item.MaterialMetadata,
+		}
+		_, err = tx.NamedExec(query, meta)
+		if err != nil { return fmt.Errorf(errMsg, p.ID, err) }
+	}
+
+	return tx.Commit()
 }

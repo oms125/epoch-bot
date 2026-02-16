@@ -5,6 +5,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "modernc.org/sqlite"
+	. "github.com/oms125/epoch-bot/game/player"
 )
 
 type Game struct {
@@ -12,11 +13,7 @@ type Game struct {
 	ActivePlayers map[string]*Player
 }
 
-//Game Logic
-
-
-//Database Logic
-func New() *Game {
+func NewGame() *Game {
 	log.Println("Initializing database...")
 	db, err := sqlx.Connect("sqlite", "epoch.db")
 	if err != nil { 
@@ -52,22 +49,21 @@ func (g *Game) InitTables() {
 		);`,
 		//Inventory Table
 		`CREATE TABLE IF NOT EXISTS inventory (
-			user_id TEXT,
-			item_id INTEGER,
-			quantity INTEGER,
+			user_id TEXT, ` +
+			FormatTableFields(InventoryFields) + `,
 			PRIMARY KEY (user_id, item_id)
 		);`,
 		//Armory Table
 		`CREATE TABLE IF NOT EXISTS armory (
 			column INTEGER PRIMARY KEY,
 			user_id TEXT, ` +
-			FormatFields(armory_fields, false) + 
+			FormatTableFields(ArmoryFields) + 
 		`);`,
 	}
 
 	for _, table := range tables {
 		if _, err := g.DB.Exec(table); err != nil {
-			log.Printf("Error setting up database table: %s, %v", table, err)
+			log.Fatalf("Error setting up database table: %s, %v", table, err)
 		}
 	}
 }

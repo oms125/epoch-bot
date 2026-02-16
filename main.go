@@ -16,12 +16,12 @@ var (
 
 func main() {
 	//Init database
-	Game = game.New()
+	Game = game.NewGame()
 	Game.InitTables()
 	defer Game.DB.Close()
 
 	//Init bot
-	Bot = bot.New(Game)
+	Bot = bot.NewBot(Game)
 	Bot.InitCommands()
 
 	//Start session

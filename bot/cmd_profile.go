@@ -1,30 +1,28 @@
 package bot
 
 import (
-	//"fmt"
 	"log"
-
-	"github.com/bwmarrin/discordgo"
+	disc "github.com/bwmarrin/discordgo"
 )
 
-func (b *Bot) ProfileCommand() (*discordgo.ApplicationCommand, Handler) {
-	return &discordgo.ApplicationCommand {
+func (b *Bot) ProfileCommand() (*disc.ApplicationCommand, Handler) {
+	return &disc.ApplicationCommand {
 		Name: "profile",
 		Description: "View your player profile",
 	},
-	func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	func(s *disc.Session, i *disc.InteractionCreate) {
 		var msg string
 		p, err := b.Game.GetPlayer(i.Member)
 		if err != nil {
 			msg = "Unable to fetch profile data at this time"
 		} else {
-			msg = p.Inv.ToString()
+			msg = p.Inv.String()
 		}
 		err = s.InteractionRespond(
 			i.Interaction,
-			&discordgo.InteractionResponse {
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData {
+			&disc.InteractionResponse {
+				Type: disc.InteractionResponseChannelMessageWithSource,
+				Data: &disc.InteractionResponseData {
 					Content: msg,
 				},
 			},

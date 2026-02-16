@@ -4,31 +4,32 @@ import (
 	"errors"
 	"log"
 
-	"github.com/bwmarrin/discordgo"
-	"github.com/oms125/epoch-bot/game"
+	disc "github.com/bwmarrin/discordgo"
+	"github.com/oms125/epoch-bot/game/player"
 )
 
-func (b *Bot) GetCommand() (*discordgo.ApplicationCommand, Handler) {
-	return &discordgo.ApplicationCommand {
+func (b *Bot) GetCommand() (*disc.ApplicationCommand, Handler) {
+	return &disc.ApplicationCommand {
 		Name: "get",
 		Description: "Get item by ID",
 		DefaultMemberPermissions: &PERM_ADMIN,
-		Options: []*discordgo.ApplicationCommandOption {
+		Options: []*disc.ApplicationCommandOption {
 			{
-				Type: discordgo.ApplicationCommandOptionInteger,
+				Type: disc.ApplicationCommandOptionInteger,
 				Name: "item",
 				Description: "The ID of the item you want",
 				Required: true,
+				MinValue: &MIN_VAL,
 			},
 			{
-				Type: discordgo.ApplicationCommandOptionInteger,
+				Type: disc.ApplicationCommandOptionInteger,
 				Name: "quantity",
 				Description: "How many items you want (only for non-tools)",
 				Required: false,
 			},
 		},
 	},
-	func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	func(s *disc.Session, i *disc.InteractionCreate) {
 		var msg string
 		p, err := b.Game.GetPlayer(i.Member)
 		if err != nil {
@@ -40,8 +41,8 @@ func (b *Bot) GetCommand() (*discordgo.ApplicationCommand, Handler) {
 				quantity = int(i.ApplicationCommandData().Options[1].IntValue())
 			}
 			err := p.AddItem(id, quantity)
-			var ime *game.ItemMaxError
-			var ife *game.InvFullError
+			var ime *player.ItemMaxError
+			var ife *player.InvFullError
 			if errors.As(err, &ime) {
 				msg = ime.Error()
 			} else if errors.As(err, &ife) {
@@ -54,9 +55,9 @@ func (b *Bot) GetCommand() (*discordgo.ApplicationCommand, Handler) {
 		}
 		err = s.InteractionRespond(
 			i.Interaction,
-			&discordgo.InteractionResponse {
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData {
+			&disc.InteractionResponse {
+				Type: disc.InteractionResponseChannelMessageWithSource,
+				Data: &disc.InteractionResponseData {
 					Content: msg,
 				},
 			},
