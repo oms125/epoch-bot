@@ -5,7 +5,7 @@ import (
 	"os"
 
 	disc "github.com/bwmarrin/discordgo"
-	. "github.com/oms125/epoch-bot/game"
+	. "github.com/oms125/epoch-bot/game/database"
 )
 
 var (

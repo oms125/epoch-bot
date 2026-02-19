@@ -6,6 +6,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "modernc.org/sqlite"
 	. "github.com/oms125/epoch-bot/game/player"
+	. "github.com/oms125/epoch-bot/game/items"
 )
 
 type Game struct {

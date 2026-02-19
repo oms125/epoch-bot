@@ -2,7 +2,6 @@ package bot
 
 import (
 	disc "github.com/bwmarrin/discordgo"
-	. "github.com/oms125/epoch-bot/game/player"
 )
 
 func (b *Bot) EquipmentCommand() (*disc.ApplicationCommand, Handler) {
@@ -36,32 +35,32 @@ func equipmentMsg(b *Bot, i *disc.InteractionCreate) (*disc.MessageEmbed, []*dis
 		Fields: []*disc.MessageEmbedField{
 			{
 				Name: "Head",
-				Value: slotValue(p, HEAD),
+				Value: p.Equipment["head"].Name,
 			},
 			{
 				Name: "Body",
-				Value: slotValue(p, BODY),
+				Value: p.Equipment["body"].Name,
 			},
 			{
 				Name: "Legs",
-				Value: slotValue(p, LEGS),
+				Value: p.Equipment["legs"].Name,
 				Inline: true,
 			},
 			{ Inline: true },
 			{
 				Name: "Primary",
-				Value: slotValue(p, PRIMARY),
+				Value: p.Equipment["primary"].Name,
 				Inline: true,
 			},
 			{
 				Name: "Feet",
-				Value: slotValue(p, FEET),
+				Value: p.Equipment["feet"].Name,
 				Inline: true,
 			},
 			{ Inline: true },
 			{
 				Name: "Secondary",
-				Value: slotValue(p, SECONDARY),
+				Value: p.Equipment["secondary"].Name,
 				Inline: true,
 			},
 		},
@@ -72,12 +71,4 @@ func equipmentMsg(b *Bot, i *disc.InteractionCreate) (*disc.MessageEmbed, []*dis
 			Reader: img.File(),
 		},
 	}
-}
-
-func slotValue(p *Player, slot int) string {
-	equipment := p.Equipment[slot]
-	if equipment == nil {
-		return "Nothing equipped"
-	}
-	return equipment.Name
 }

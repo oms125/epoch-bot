@@ -6,7 +6,7 @@ import (
 	"os/signal"
 
 	"github.com/oms125/epoch-bot/bot"
-	"github.com/oms125/epoch-bot/game"
+	game "github.com/oms125/epoch-bot/game/database"
 )
 
 var (

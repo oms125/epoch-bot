@@ -1,30 +1,26 @@
-package player
+package items
 
 import (
 	"fmt"
-	"strings"
 	"errors"
+	"strings"
 )
 
-func (m *MaterialData) Type() int { return TYPE_MATERIAL }
-func (m *MaterialMetadata) Type() int { return TYPE_MATERIAL }
-func (m *Material) Type() int { return TYPE_MATERIAL }
+const TYPE_MATERIAL = "material"
 
 type (
 	Inventory map[int]*Material
 
 	Material struct {
-		Item
 		*MaterialData
-		*MaterialMetadata
+		MaterialMetadata
 	}
 	MaterialData struct {
-		ItemData
-		ID int
+		ID int `db:"item_id"`
 		Name string
+		ImageName string
 	}
 	MaterialMetadata struct {
-		ItemMetadata
 		Quantity int `db:"quantity"`
 	}
 )
@@ -40,7 +36,10 @@ var InventoryFields = []Field{
 	},
 }
 
-//Game Logic
+//Materials
+func (m *Material) Type() string { return TYPE_MATERIAL }
+func (m *MaterialData) Type() string { return TYPE_MATERIAL }
+
 func (m *Material) ChangeQuantity(n int) error { 
 	total := m.MaterialMetadata.Quantity + n
 	if (total > 99) {
@@ -53,36 +52,36 @@ func (m *Material) ChangeQuantity(n int) error {
 	return nil
 }
 
-func (p *Player) AddMaterial(id int, quantity int) error {
+//Inventory
+func (i Inventory) AddMaterial(id int, quantity int, invSize int) error {
 	if quantity <= 0 { return nil }
 	item := ITEM_DATA[id].(*MaterialData)
-	mat, ok := p.Inv[id]
-	if !ok && len(p.Inv) >= p.InvSize {
+	mat, ok := i[id]
+	if !ok && len(i) >= invSize {
 		return &InvFullError{}
 	} else if !ok {
-		p.Inv[id] = &Material{
+		i[id] = &Material{
 			MaterialData: item,
-			MaterialMetadata: &MaterialMetadata{ Quantity: 0 },
+			MaterialMetadata: MaterialMetadata{ Quantity: 0 },
 		}
-		mat = p.Inv[id]
+		mat = i[id]
 	}
 	err := mat.ChangeQuantity(quantity)
 	return err
 }
 
-func (p *Player) RemoveMaterial(id int, quantity int) error {
+func (i Inventory) RemoveMaterial(id int, quantity int) error {
 	if quantity <= 0 { return nil }
-	mat, ok := p.Inv[id]
+	mat, ok := i[id]
 	if !ok { return nil }
 	err := mat.ChangeQuantity(quantity)
 	var iee *ItemEmptyError
 	if errors.As(err, &iee) {
-		delete(p.Inv, id)
+		delete(i, id)
 	}
 	return err
 }
 
-//Helpers
 func (i Inventory) String() string {
 	var invString strings.Builder; 
 	for _, mat := range i {
