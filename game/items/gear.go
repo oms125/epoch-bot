@@ -20,9 +20,9 @@ type (
 	GearData struct {
 		ID            int
 		Name          string
-		ImageName 	  string
 		MaxDurability int
 		EquipSlot     string
+		Emoji
 		BaseStats
 	}
 	GearMetadata struct {
@@ -60,11 +60,11 @@ func (gd *GearData) NewGear() *Gear {
 	}
 }
 
-func (g *Gear) String() string {
+func (g *Gear) Info() string {
 	var str strings.Builder
-	fmt.Fprintf(&str, ":%s: **%s**\n", g.ImageName, g.Name)
+	fmt.Fprintf(&str, "%s **%s**\n", g.Emoji, g.Name)
 	if (g.Attack > 0) {
-		fmt.Fprintf(&str, "Attach +%d\n", g.Attack)
+		fmt.Fprintf(&str, "Attack +%d\n", g.Attack)
 	}
 	if (g.Defense > 0) {
 		fmt.Fprintf(&str, "Defense +%d\n", g.Defense)
@@ -75,25 +75,29 @@ func (g *Gear) String() string {
 	return str.String()
 }
 
+func (g *Gear) String() string {
+	return fmt.Sprintf("%s %s (%d/%d)", g.Emoji, g.Name, g.Durability, g.MaxDurability)
+}
+
 //Armory
-func (a Armory) AddGear(gear *Gear, armSize int) error {
-	if len(a) >= armSize {
+func (a *Armory) AddGear(gear *Gear, armSize int) error {
+	if len(*a) >= armSize {
 		return &ArmFullError{}
 	}
-	a = append(a, gear)
+	*a = append(*a, gear)
 	return nil
 }
 
-func (a Armory) RemoveGear(idx int) {
-	if (idx < len(a)) {
-		a = slices.Delete(a, idx, idx+1)
+func (a *Armory) RemoveGear(idx int) {
+	if (idx < len(*a)) {
+		*a = slices.Delete(*a, idx, idx+1)
 	}
 }
 
-func (arm Armory) String() string {
+func (a Armory) String() string {
 	var armString strings.Builder; 
-	for _, tool := range arm {
-		fmt.Fprintf(&armString, "%s: (%d/%d) %s\n", tool.Name, tool.Durability, tool.MaxDurability, tool.Equipped)
+	for _, tool := range a {
+		fmt.Fprint(&armString, tool.String(), "\n")
 	}
 	return armString.String()
 }
@@ -102,24 +106,39 @@ func (arm Armory) String() string {
 func (e Equipment) Equip(g *Gear, slot string) error {
 	slot = strings.ToLower(slot)
 	switch g.GearData.EquipSlot {
-	case slot: e.equip(g, slot)
+	case slot: 
+		e.equip(g, slot)
+		return nil
 	case "tool":
 		if (slot == "primary" || slot == "secondary") {
 			e.equip(g, slot)
+			return nil
 		}
-	default:
-		return fmt.Errorf("Invalid equipment slot for **%s**", g.Name)
 	}
-	return nil
+	return fmt.Errorf("Invalid equipment slot for **%s**", g.Name)
 }
 
 func (e Equipment) equip(g *Gear, slot string) {
-	e[slot].Equipped = ""
+	if (e[slot] != nil) {
+		e[slot].Equipped = ""
+	}
 	e[slot] = g
+	if (g.Equipped != "") {
+		e[g.Equipped] = nil 
+	}
 	g.Equipped = slot
 }
 
 func (e Equipment) Unequip(slot string) {
-	e[slot].Equipped = ""
-	e[slot] = nil
+	if (e[slot] != nil) {
+		e[slot].Equipped = ""
+		e[slot] = nil
+	}
+}
+
+func (e Equipment) SlotValue(slot string) string {
+	if (e[slot] != nil) {
+		return e[slot].String()
+	}
+	return "Nothing Equipped"
 }

@@ -2,6 +2,7 @@ package bot
 
 import (
 	disc "github.com/bwmarrin/discordgo"
+	. "github.com/oms125/epoch-bot/game"
 )
 
 func (b *Bot) EquipmentCommand() (*disc.ApplicationCommand, Handler) {
@@ -35,32 +36,32 @@ func equipmentMsg(b *Bot, i *disc.InteractionCreate) (*disc.MessageEmbed, []*dis
 		Fields: []*disc.MessageEmbedField{
 			{
 				Name: "Head",
-				Value: p.Equipment["head"].Name,
+				Value: p.Equipment.SlotValue("head"),
 			},
 			{
 				Name: "Body",
-				Value: p.Equipment["body"].Name,
+				Value: p.Equipment.SlotValue("body"),
 			},
 			{
 				Name: "Legs",
-				Value: p.Equipment["legs"].Name,
+				Value: p.Equipment.SlotValue("legs"),
 				Inline: true,
 			},
 			{ Inline: true },
 			{
 				Name: "Primary",
-				Value: p.Equipment["primary"].Name,
+				Value: p.Equipment.SlotValue("primary"),
 				Inline: true,
 			},
 			{
 				Name: "Feet",
-				Value: p.Equipment["feet"].Name,
+				Value: p.Equipment.SlotValue("feet"),
 				Inline: true,
 			},
 			{ Inline: true },
 			{
 				Name: "Secondary",
-				Value: p.Equipment["secondary"].Name,
+				Value: p.Equipment.SlotValue("secondary"),
 				Inline: true,
 			},
 		},

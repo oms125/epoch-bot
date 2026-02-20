@@ -2,6 +2,7 @@ package bot
 
 import (
 	disc "github.com/bwmarrin/discordgo"
+	. "github.com/oms125/epoch-bot/game"
 )
 
 func (b *Bot) InventoryCommand() (*disc.ApplicationCommand, Handler) {

@@ -1,8 +1,9 @@
-package bot
+package game
 
 import (
 	"os"
 	"log"
+	"fmt"
 )
 
 const (
@@ -11,10 +12,17 @@ const (
 	attachment = "attachment://"
 )
 
-type Image struct {
-	Name string
-	Type string
-}
+type (
+	Image struct {
+		Name string
+		Type string
+	}
+	
+	Emoji struct {
+		Name string
+		ID string
+	}
+)
 
 func (img Image) FullPath() string {
 	return img.Type + img.Name
@@ -31,5 +39,9 @@ func (img Image) File() *os.File {
 		return nil
 	}
 	return file
+}
+
+func (e Emoji) String() string {
+	return fmt.Sprintf("<:%s:%s>", e.Name, e.ID)
 }
 

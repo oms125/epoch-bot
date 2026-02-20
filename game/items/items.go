@@ -21,9 +21,13 @@ func init() {
 		STICK: &MaterialData{ID: STICK, Name: "Stick"},
 
 		//Gears
-		SWORD: &GearData{ID: SWORD, Name: "Sword", ImageName: "sword", MaxDurability: 100, EquipSlot: "tool", BaseStats: BaseStats{
-			Attack: 5,
-		}},
+		SWORD: &GearData{
+			ID: SWORD, Name: "Sword", MaxDurability: 100, EquipSlot: "tool", Emoji: Emoji{
+				Name: "sword", ID: "1474187356482568460",
+			}, BaseStats: BaseStats{
+				Attack: 5,
+			},
+		},
 	}
 }
 

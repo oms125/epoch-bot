@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"errors"
 	"strings"
+	. "github.com/oms125/epoch-bot/game"
 )
 
 const TYPE_MATERIAL = "material"
@@ -18,7 +19,7 @@ type (
 	MaterialData struct {
 		ID int `db:"item_id"`
 		Name string
-		ImageName string
+		Emoji
 	}
 	MaterialMetadata struct {
 		Quantity int `db:"quantity"`
